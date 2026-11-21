@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#84d9e8" />
+    <title>Flappy Bird</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="scripts.js" defer></script>
+  </head>
+  <body>
+    <main class="game">
+      <header class="game-header">
+        <p class="eyebrow">A tiny flying challenge</p>
+        <h1>Flappy Bird</h1>
+      </header>
+
+      <section class="game-frame" aria-label="Flappy Bird game">
+        <canvas
+          id="game"
+          width="480"
+          height="640"
+          aria-label="Flappy Bird. Press Space, the up arrow, or click to flap."
+        >
+          Your browser does not support canvas.
+        </canvas>
+      </section>
+
+      <p class="controls">
+        Press <kbd>Space</kbd> or <kbd>Up</kbd>, or click to flap
+      </p>
+    </main>
+
+    <button class="shop-button" id="open-shop" type="button" aria-haspopup="dialog">
+      <span class="shop-button-icon" aria-hidden="true">✦</span>
+      Skins
+    </button>
+
+    <dialog class="shop-dialog" id="skin-shop" aria-labelledby="shop-title">
+      <div class="shop-header">
+        <div>
+          <p class="eyebrow">Make it yours</p>
+          <h2 id="shop-title">Bird skins</h2>
+        </div>
+        <button class="close-shop" id="close-shop" type="button" aria-label="Close skin shop">
+          &times;
+        </button>
+      </div>
+      <nav class="customize-tabs" aria-label="Customize your bird">
+        <button class="customize-tab" type="button" data-category="skins" aria-pressed="true">
+          Skins
+        </button>
+        <button class="customize-tab" type="button" data-category="trails" aria-pressed="false">
+          Trails
+        </button>
+        <button class="customize-tab" type="button" data-category="limiteds" aria-pressed="false">
+          Limiteds
+        </button>
+      </nav>
+      <section class="shop-category" data-panel="skins" aria-label="Bird skins">
+        <p class="shop-description">Pick a look for your next flight. Every skin is free!</p>
+        <div class="skin-list" aria-label="Available bird skins">
+        <button class="skin-option" type="button" data-skin="sunshine" aria-pressed="true">
+          <span class="skin-preview sunshine" aria-hidden="true"></span>
+          <span class="skin-name">Sunshine</span>
+          <span class="skin-status">Selected</span>
+        </button>
+        <button class="skin-option" type="button" data-skin="sky" aria-pressed="false">
+          <span class="skin-preview sky" aria-hidden="true"></span>
+          <span class="skin-name">Sky</span>
+          <span class="skin-status">Choose</span>
+        </button>
+        <button class="skin-option" type="button" data-skin="berry" aria-pressed="false">
+          <span class="skin-preview berry" aria-hidden="true"></span>
+          <span class="skin-name">Berry</span>
+          <span class="skin-status">Choose</span>
+        </button>
+        <button class="skin-option" type="button" data-skin="mint" aria-pressed="false">
+          <span class="skin-preview mint" aria-hidden="true"></span>
+          <span class="skin-name">Mint</span>
+          <span class="skin-status">Choose</span>
+        </button>
+        <button class="skin-option" type="button" data-skin="fire" aria-pressed="false">
+          <span class="skin-preview fire" aria-hidden="true"></span>
+          <span class="skin-name">Fire</span>
+          <span class="skin-status">Choose</span>
+        </button>
+        <button class="skin-option" type="button" data-skin="ice" aria-pressed="false">
+          <span class="skin-preview ice" aria-hidden="true"></span>
+          <span class="skin-name">Ice</span>
+          <span class="skin-status">Choose</span>
+        </button>
+        <button class="skin-option" type="button" data-skin="lightning" aria-pressed="false">
+          <span class="skin-preview lightning" aria-hidden="true"></span>
+          <span class="skin-name">Lightning</span>
+          <span class="skin-status">Choose</span>
+        </button>
+        <button class="skin-option" type="button" data-skin="water" aria-pressed="false">
+          <span class="skin-preview water" aria-hidden="true"></span>
+          <span class="skin-name">Water</span>
+          <span class="skin-status">Choose</span>
+        </button>
+        <button class="skin-option" type="button" data-skin="camera" aria-pressed="false">
+          <span class="skin-preview camera" aria-hidden="true"></span>
+          <span class="skin-name">Camera</span>
+          <span class="skin-status">Choose</span>
+        </button>
+        <button class="skin-option" type="button" data-skin="laptop" aria-pressed="false">
+          <span class="skin-preview laptop" aria-hidden="true"></span>
+          <span class="skin-name">Laptop</span>
+          <span class="skin-status">Choose</span>
+        </button>
+        <button class="skin-option" type="button" data-skin="wild-christmas" aria-pressed="false">
+          <span class="skin-preview wild-christmas" aria-hidden="true"></span>
+          <span class="skin-name">Wild Christmas</span>
+          <span class="skin-status">Choose</span>
+        </button>
+        <button class="skin-option" type="button" data-skin="minecraft-cactus" aria-pressed="false">
+          <span class="skin-preview minecraft-cactus" aria-hidden="true"></span>
+          <span class="skin-name">Minecraft Cactus</span>
+          <span class="skin-status">Choose</span>
+        </button>
+        </div>
+      </section>
+      <section class="shop-category" data-panel="trails" aria-label="Bird trails" hidden>
+        <p class="shop-description">Leave a little magic in your wake. All trails are free!</p>
+        <div class="skin-list" aria-label="Available bird trails">
+          <button class="skin-option" type="button" data-trail="none" aria-pressed="true">
+            <span class="trail-preview trail-none" aria-hidden="true"></span>
+            <span class="skin-name">No trail</span>
+            <span class="skin-status">Selected</span>
+          </button>
+          <button class="skin-option" type="button" data-trail="sparkle" aria-pressed="false">
+            <span class="trail-preview trail-sparkle" aria-hidden="true"></span>
+            <span class="skin-name">Sparkles</span>
+            <span class="skin-status">Choose</span>
+          </button>
+          <button class="skin-option" type="button" data-trail="fire" aria-pressed="false">
+            <span class="trail-preview trail-fire" aria-hidden="true"></span>
+            <span class="skin-name">Flames</span>
+            <span class="skin-status">Choose</span>
+          </button>
+          <button class="skin-option" type="button" data-trail="bubbles" aria-pressed="false">
+            <span class="trail-preview trail-bubbles" aria-hidden="true"></span>
+            <span class="skin-name">Bubbles</span>
+            <span class="skin-status">Choose</span>
+          </button>
+          <button class="skin-option" type="button" data-trail="rainbow" aria-pressed="false">
+            <span class="trail-preview trail-rainbow" aria-hidden="true"></span>
+            <span class="skin-name">Rainbow</span>
+            <span class="skin-status">Choose</span>
+          </button>
+          <button class="skin-option" type="button" data-trail="red-black-lightning" aria-pressed="false">
+            <span class="trail-preview trail-red-black-lightning" aria-hidden="true"></span>
+            <span class="skin-name">Red &amp; Black Lightning</span>
+            <span class="skin-status">Choose</span>
+          </button>
+          <button class="skin-option" type="button" data-trail="crazy-christmas" aria-pressed="false">
+            <span class="trail-preview trail-crazy-christmas" aria-hidden="true"></span>
+            <span class="skin-name">Crazy Christmas</span>
+            <span class="skin-status">Choose</span>
+          </button>
+          <button class="skin-option" type="button" data-trail="crazy-cactus" aria-pressed="false">
+            <span class="trail-preview trail-crazy-cactus" aria-hidden="true"></span>
+            <span class="skin-name">Crazy Cactus</span>
+            <span class="skin-status">Choose</span>
+          </button>
+          <button class="skin-option" type="button" data-trail="binary" aria-pressed="false">
+            <span class="trail-preview trail-binary" aria-hidden="true">101</span>
+            <span class="skin-name">Binary Green</span>
+            <span class="skin-status">Choose</span>
+          </button>
+          <button class="skin-option" type="button" data-trail="avatar-echo" aria-pressed="false">
+            <span class="trail-preview trail-avatar-echo" aria-hidden="true"></span>
+            <span class="skin-name">Avatar Echo</span>
+            <span class="skin-status">Choose</span>
+          </button>
+        </div>
+      </section>
+      <section class="shop-category" data-panel="limiteds" aria-label="Limited items" hidden>
+        <p class="shop-description">No limited items are available right now.</p>
+      </section>
+    </dialog>
+  </body>
+</html>
