@@ -248,6 +248,62 @@ kbd {
   background: #eff9ec;
 }
 
+.black-hole-tooltip {
+  position: relative;
+}
+
+.black-hole-tooltip::after {
+  content: "When paired with the Star Consume trail, the black hole expands until it reaches a certain size and then explodes";
+  position: absolute;
+  z-index: 20;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  width: min(280px, calc(100vw - 48px));
+  padding: 10px 12px;
+  border: 2px solid #d18cff;
+  border-radius: 10px;
+  background: #17101f;
+  box-shadow: 0 8px 22px #09051166, 0 0 12px #d18cff55;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: left;
+  transform: translate(-50%, 6px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 140ms ease, transform 140ms ease, visibility 140ms ease;
+}
+
+.black-hole-tooltip::before {
+  content: "";
+  position: absolute;
+  z-index: 21;
+  left: 50%;
+  bottom: calc(100% + 4px);
+  border: 7px solid transparent;
+  border-top-color: #d18cff;
+  transform: translateX(-50%);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 140ms ease, visibility 140ms ease;
+}
+
+.black-hole-tooltip:hover::after,
+.black-hole-tooltip:focus-visible::after,
+.black-hole-tooltip:hover::before,
+.black-hole-tooltip:focus-visible::before {
+  opacity: 1;
+  visibility: visible;
+}
+
+.black-hole-tooltip:hover::after,
+.black-hole-tooltip:focus-visible::after {
+  transform: translate(-50%, 0);
+}
+
 .shop-category[hidden] {
   display: none;
 }
@@ -258,6 +314,71 @@ kbd {
   font-size: 0.82rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+.password-lock-card {
+  display: grid;
+  justify-items: center;
+  padding: 24px 12px 18px;
+  text-align: center;
+}
+
+.password-lock-icon {
+  font-size: 2.2rem;
+  filter: drop-shadow(0 3px 5px #173a5322);
+}
+
+.password-lock-card h3 {
+  margin: 10px 0 4px;
+  font-size: 1.25rem;
+}
+
+.password-lock-card p {
+  margin: 4px 0 14px;
+  color: #5a7770;
+  font-size: 0.88rem;
+}
+
+.password-form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  width: 100%;
+  max-width: 280px;
+}
+
+.password-form input {
+  min-width: 0;
+  height: 42px;
+  border: 2px solid #dbe8df;
+  border-radius: 9px;
+  background: #fff;
+  color: #173a53;
+  font: inherit;
+  text-align: center;
+  outline: none;
+}
+
+.password-form input:focus {
+  border-color: #58a979;
+  box-shadow: 0 0 0 3px #58a97922;
+}
+
+.password-form button {
+  height: 42px;
+  border: 0;
+  border-radius: 9px;
+  background: #347d68;
+  box-shadow: 0 3px 0 #235d51;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+}
+
+.password-error {
+  color: #b52f42 !important;
+  font-weight: 800;
 }
 
 .limited-list {
@@ -465,6 +586,36 @@ kbd {
   height: 4px;
   border: 1px solid #11151b;
   background: #707984;
+}
+
+.skin-preview.black-hole {
+  --skin-color: #090511;
+  --skin-wing: #381c5e;
+  --skin-outline: #d18cff;
+  width: 38px;
+  height: 32px;
+  margin-inline: -3px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #000 0 24%, #090511 25% 38%, #6a3a9e 39% 50%, #f7b95b 51% 58%, #d18cff 59% 64%, transparent 65%);
+  box-shadow:
+    0 0 9px #d18cff,
+    0 0 15px #f7b95b;
+  animation: black-hole-preview-spin 0.8s linear infinite, black-hole-preview-pulse 350ms ease-in-out infinite alternate;
+}
+
+@keyframes black-hole-preview-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes black-hole-preview-pulse {
+  to {
+    box-shadow:
+      0 0 14px #d18cff,
+      0 0 22px #f7b95b;
+    filter: brightness(1.35);
+  }
 }
 
 @keyframes camera-preview-flash {
@@ -826,6 +977,108 @@ kbd {
   border-width: 1px;
   opacity: 0.55;
   box-shadow: -8px 5px 0 -3px #e99b38;
+}
+
+.trail-star-consume {
+  position: relative;
+  width: 44px;
+  height: 28px;
+  overflow: visible;
+  animation: star-consume-preview-pulse 700ms ease-in-out infinite alternate;
+}
+
+.trail-star-consume::before,
+.trail-star-consume::after {
+  position: absolute;
+  content: "";
+  border-radius: 50%;
+  background: #ff304f;
+  filter: drop-shadow(0 0 6px #ff304f);
+}
+
+.trail-star-consume::before {
+  right: 2px;
+  top: 7px;
+  width: 20px;
+  height: 20px;
+}
+
+.trail-star-consume::after {
+  right: 24px;
+  top: 10px;
+  width: 10px;
+  height: 10px;
+  background: #fff7d6;
+  filter: drop-shadow(0 0 5px #ffd34f);
+  opacity: 0.75;
+  box-shadow: -10px 8px 0 -3px #f7b95b;
+}
+
+@keyframes star-consume-preview-pulse {
+  to {
+    filter: brightness(1.35) drop-shadow(0 0 5px #d18cff);
+  }
+}
+
+.skin-preview.organ {
+  --skin-color: #e65c68;
+  --skin-wing: #f7b0b7;
+  --skin-outline: #74212d;
+  border-radius: 3px;
+  background:
+    radial-gradient(circle at 68% 45%, #ff9aa3 0 3px, transparent 4px),
+    radial-gradient(circle at 30% 55%, #f7b0b7 0 4px, transparent 5px),
+    linear-gradient(#e65c68 0 60%, #a93847 60%);
+  box-shadow:
+    inset 0 -5px 0 #74212d,
+    0 0 7px #ff9aa3;
+}
+
+.skin-preview.organ::after {
+  position: absolute;
+  top: -17px;
+  right: -12px;
+  content: "♥";
+  color: #e65c68;
+  font-size: 19px;
+  text-shadow: 0 1px 2px #74212d;
+}
+
+.trail-organ {
+  position: relative;
+  width: 44px;
+  height: 28px;
+  color: #e65c68;
+  font-size: 18px;
+  text-shadow: 0 0 7px #ff9aa3;
+  animation: organ-trail-flash 700ms steps(1) infinite;
+}
+
+.trail-organ::before {
+  position: absolute;
+  content: "♥";
+  left: 3px;
+  top: 1px;
+  color: #e65c68;
+  font-size: 18px;
+}
+
+.trail-organ::after {
+  position: absolute;
+  content: "❤";
+  right: 2px;
+  bottom: 0;
+  color: #a93847;
+  font-size: 15px;
+}
+
+@keyframes organ-trail-flash {
+  0%, 100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.8) drop-shadow(0 0 5px #ff9aa3);
+  }
 }
 
 .skin-name {

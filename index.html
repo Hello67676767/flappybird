@@ -177,8 +177,55 @@
           </button>
         </div>
       </section>
+      <section class="shop-category limited-lock" data-panel="limited-lock" aria-label="Limiteds password" hidden>
+        <div class="password-lock-card">
+          <span class="password-lock-icon" aria-hidden="true">🔒</span>
+          <h3>Limiteds are locked</h3>
+          <p>Enter the password to unlock this section.</p>
+          <form class="password-form" id="limited-password-form">
+            <input
+              id="limited-password"
+              name="password"
+              type="password"
+              inputmode="numeric"
+              autocomplete="off"
+              aria-label="Limiteds password"
+              placeholder="Password"
+              required
+            />
+            <button type="submit">Unlock</button>
+          </form>
+          <p class="password-error" id="password-error" role="alert" hidden>Incorrect password.</p>
+        </div>
+      </section>
       <section class="shop-category" data-panel="limiteds" aria-label="Limited items" hidden>
-        <p class="shop-description">No limited items are available right now.</p>
+        <p class="shop-description">Rare anatomical drops. Limited items are free!</p>
+        <h3 class="limited-heading">Limited skin</h3>
+        <div class="skin-list limited-list" aria-label="Limited organ skin">
+          <button class="skin-option" type="button" data-skin="organ" aria-pressed="false">
+            <span class="skin-preview organ" aria-hidden="true"></span>
+            <span class="skin-name">Organ</span>
+            <span class="limited-badge">LIMITED</span>
+          </button>
+          <button class="skin-option black-hole-tooltip" type="button" data-skin="black-hole" aria-pressed="false">
+            <span class="skin-preview black-hole" aria-hidden="true"></span>
+            <span class="skin-name">Black Hole</span>
+            <span class="limited-badge">LIMITED</span>
+          </button>
+        </div>
+        <h3 class="limited-heading">Limited trail</h3>
+        <div class="skin-list limited-list" aria-label="Limited organ trail">
+          <button class="skin-option" type="button" data-trail="organ" aria-pressed="false">
+            <span class="trail-preview trail-organ" aria-hidden="true"></span>
+            <span class="skin-name">Organ Trail</span>
+            <span class="limited-badge">LIMITED</span>
+          </button>
+          <button class="skin-option" type="button" data-trail="star-consume" aria-pressed="false">
+            <span class="trail-preview trail-star-consume" aria-hidden="true"></span>
+            <span class="skin-name">Star Consume</span>
+            <span class="limited-badge">LIMITED</span>
+          </button>
+        </div>
       </section>
     </dialog>
   </body>

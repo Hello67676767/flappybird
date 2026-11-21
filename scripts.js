@@ -25,6 +25,8 @@ const SKINS = {
   "minecraft-cactus": { body: "#55b84a", wing: "#2d7435", outline: "#1c5428", beak: "#b6dc55" },
   camera: { body: "#30353c", wing: "#4b535d", outline: "#111318", beak: "#d9f1ff" },
   laptop: { body: "#262a31", wing: "#11151b", outline: "#0a0d11", beak: "#55ff77" },
+  organ: { body: "#e65c68", wing: "#f7b0b7", outline: "#74212d", beak: "#b52f42" },
+  "black-hole": { body: "#090511", wing: "#381c5e", outline: "#d18cff", beak: "#f7b95b" },
 };
 
 let state = "ready";
@@ -39,9 +41,18 @@ let selectedSkin = "sunshine";
 let selectedTrail = "none";
 let activeCategory = "skins";
 let isShopOpen = false;
+let limitedUnlocked = false;
 let trailHistory = [];
 let lastTrailSample = 0;
 let cameraFlashUntil = 0;
+let blackHoleGrowth = 1;
+let blackHolePhase = "growing";
+let blackHolePhaseStarted = 0;
+let blackHoleGrowElapsed = 0;
+let blackHoleExplosionElapsed = 0;
+const BLACK_HOLE_MAX_GROWTH = 5.8;
+const BLACK_HOLE_GROW_TIME = 12;
+const BLACK_HOLE_EXPLOSION_TIME = 2.2;
 
 const shopDialog = document.querySelector("#skin-shop");
 const categoryTabs = document.querySelectorAll(".customize-tab");
@@ -86,6 +97,41 @@ function recordTrailPoint(timestamp) {
   lastTrailSample = timestamp;
   trailHistory.unshift({ y: birdY });
   if (trailHistory.length > 16) trailHistory.pop();
+}
+
+function isBlackHoleStarPair() {
+  return selectedSkin === "black-hole" && selectedTrail === "star-consume";
+}
+
+function updateBlackHolePair(deltaSeconds) {
+  const paired = isBlackHoleStarPair();
+  if (!paired || state !== "playing" || isShopOpen) {
+    blackHoleGrowth = 1;
+    blackHolePhase = "growing";
+    blackHolePhaseStarted = 0;
+    blackHoleGrowElapsed = 0;
+    blackHoleExplosionElapsed = 0;
+    return;
+  }
+
+  if (blackHolePhase === "growing") {
+    blackHoleGrowElapsed += deltaSeconds;
+    blackHoleGrowth = 1 + Math.min(1, blackHoleGrowElapsed / BLACK_HOLE_GROW_TIME) * (BLACK_HOLE_MAX_GROWTH - 1);
+    if (blackHoleGrowElapsed >= BLACK_HOLE_GROW_TIME) {
+      blackHolePhase = "exploding";
+      blackHolePhaseStarted = blackHoleGrowElapsed;
+      blackHoleExplosionElapsed = 0;
+    }
+  } else if (blackHolePhase === "exploding") {
+    blackHoleExplosionElapsed += deltaSeconds;
+    if (blackHoleExplosionElapsed >= BLACK_HOLE_EXPLOSION_TIME) {
+      blackHoleGrowth = 1;
+      blackHolePhase = "growing";
+      blackHolePhaseStarted = 0;
+      blackHoleGrowElapsed = 0;
+      blackHoleExplosionElapsed = 0;
+    }
+  }
 }
 
 function flap() {
@@ -577,6 +623,79 @@ function drawTrail(trail, time) {
     }
   }
 
+  if (trail === "star-consume" && trailHistory.length > 0) {
+    const starSizes = [4, 7, 11, 5, 9, 14, 6, 12, 8, 16, 5, 10];
+    for (let i = 0; i < starSizes.length; i += 1) {
+      const cycle = ((time * 0.22 + i * 0.083) % 1);
+      const x = BIRD_X - 210 + cycle * 210;
+      const y = birdY + Math.sin(time * 0.9 + i * 1.37) * (14 + i % 4 * 3);
+      const size = starSizes[i] * (1 - cycle * 0.9);
+      const spiral = cycle * 0.7;
+
+      context.save();
+      context.translate(x + Math.sin(time * 0.65 + i) * spiral * 8, y + Math.cos(time * 0.65 + i) * spiral * 5);
+      context.globalAlpha = 0.35 + cycle * 0.65;
+      const orbColors = ["#ff304f", "#ffd34f", "#fff7d6"];
+      context.fillStyle = orbColors[i % orbColors.length];
+      context.shadowColor = context.fillStyle;
+      context.shadowBlur = 18;
+      context.beginPath();
+      context.arc(0, 0, size, 0, Math.PI * 2);
+      context.fill();
+
+      context.globalAlpha *= 0.75;
+      context.fillStyle = "#fff";
+      context.beginPath();
+      context.arc(-size * 0.28, -size * 0.28, Math.max(1, size * 0.22), 0, Math.PI * 2);
+      context.fill();
+      context.restore();
+    }
+
+    context.save();
+    context.strokeStyle = "#d18cff";
+    context.globalAlpha = 0.32;
+    context.lineWidth = 2;
+    context.shadowColor = "#f7b95b";
+    context.shadowBlur = 10;
+    context.beginPath();
+    context.arc(BIRD_X, birdY, 24 + Math.sin(time * 5) * 3, 0, Math.PI * 2);
+    context.stroke();
+    context.restore();
+  }
+
+  if (trail === "organ" && trailHistory.length > 0) {
+    for (let i = 0; i < trailHistory.length; i += 1) {
+      const point = trailHistory[i];
+      const x = BIRD_X - 30 - i * 11;
+      const y = point.y + Math.sin(time * 7 + i) * 7;
+      const size = 6 + (i % 3) * 2;
+      context.save();
+      context.translate(x, y);
+      context.globalAlpha = 0.5 + (1 - i / trailHistory.length) * 0.5;
+      context.shadowColor = i % 2 ? "#ff9aa3" : "#b52f42";
+      context.shadowBlur = 10;
+
+      if (i % 2 === 0) {
+        context.fillStyle = "#e65c68";
+        context.beginPath();
+        context.moveTo(0, -size);
+        context.quadraticCurveTo(-size * 1.1, -size * 1.4, -size, 0);
+        context.quadraticCurveTo(-size * 0.6, size * 1.3, 0, size);
+        context.quadraticCurveTo(size * 0.9, size * 0.8, size, 0);
+        context.quadraticCurveTo(size * 0.8, -size * 1.2, 0, -size);
+        context.closePath();
+        context.fill();
+      } else {
+        context.fillStyle = "#f7b0b7";
+        context.beginPath();
+        context.ellipse(-size * 0.65, 0, size * 0.75, size, 0.15, 0, Math.PI * 2);
+        context.ellipse(size * 0.65, 0, size * 0.75, size, -0.15, 0, Math.PI * 2);
+        context.fill();
+      }
+      context.restore();
+    }
+  }
+
   context.restore();
 }
 
@@ -585,7 +704,137 @@ function drawSkinEffect(skinName, time) {
   context.lineCap = "round";
   context.lineJoin = "round";
 
-  if (skinName === "laptop") {
+  if (skinName === "black-hole") {
+    const pulse = 1 + Math.sin(time * 8) * 0.08;
+    const paired = isBlackHoleStarPair();
+    const pairScale = paired ? blackHoleGrowth : 1;
+    context.scale(pulse * pairScale, pulse * pairScale);
+
+    if (blackHolePhase === "exploding" && paired) {
+      const progress = Math.min(1, blackHoleExplosionElapsed / BLACK_HOLE_EXPLOSION_TIME);
+      context.globalAlpha = 1 - progress * 0.35;
+      context.fillStyle = "#fff";
+      context.shadowColor = "#fff";
+      context.shadowBlur = 30;
+      context.beginPath();
+      context.arc(0, 0, 19 + progress * 36, 0, Math.PI * 2);
+      context.fill();
+
+      for (let ray = 0; ray < 16; ray += 1) {
+        const angle = ray * Math.PI / 8 + progress * 2;
+        const inner = 20 + progress * 20;
+        const outer = 60 + progress * 100;
+        context.strokeStyle = ray % 2 ? "#d18cff" : "#fff2a8";
+        context.lineWidth = 3 + (ray % 3);
+        context.globalAlpha = 1 - progress;
+        context.beginPath();
+        context.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+        context.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+        context.stroke();
+      }
+
+      context.globalAlpha = 1 - progress;
+      context.strokeStyle = "#f7b95b";
+      context.lineWidth = 5;
+      context.beginPath();
+      context.arc(0, 0, 24 + progress * 180, 0, Math.PI * 2);
+      context.stroke();
+    }
+
+    context.save();
+    context.rotate(time * 1.1);
+
+    const diskGradient = context.createRadialGradient(0, 0, 10, 0, 0, 42);
+    diskGradient.addColorStop(0, "#090511");
+    diskGradient.addColorStop(0.25, "#090511");
+    diskGradient.addColorStop(0.35, "#d18cff");
+    diskGradient.addColorStop(0.46, "#f7b95b");
+    diskGradient.addColorStop(0.55, "#7b57d1");
+    diskGradient.addColorStop(0.64, "#fbe4a2");
+    diskGradient.addColorStop(0.82, "#09051100");
+    context.fillStyle = diskGradient;
+    context.globalAlpha = 1;
+    context.shadowColor = "#d18cff";
+    context.shadowBlur = 18;
+    context.beginPath();
+    context.ellipse(0, 0, 43, 20, 0, 0, Math.PI * 2);
+    context.fill();
+
+    for (let ring = 0; ring < 3; ring += 1) {
+      context.strokeStyle = ring === 1 ? "#f7b95b" : "#d18cff";
+      context.lineWidth = ring === 0 ? 3 : 1.5;
+      context.globalAlpha = 0.75 - ring * 0.12;
+      context.beginPath();
+      context.ellipse(0, 0, 34 - ring * 4, 14 - ring * 2.5, 0, 0, Math.PI * 2);
+      context.stroke();
+    }
+
+    context.restore();
+
+    context.fillStyle = "#000";
+    context.shadowColor = "#d18cff";
+    context.shadowBlur = 24;
+    context.beginPath();
+    context.arc(0, 0, 19, 0, Math.PI * 2);
+    context.fill();
+    context.strokeStyle = "#f7b95b";
+    context.lineWidth = 3;
+    context.shadowColor = "#f7b95b";
+    context.shadowBlur = 16;
+    context.beginPath();
+    context.arc(0, 0, 21 + Math.sin(time * 8) * 2, 0, Math.PI * 2);
+    context.stroke();
+
+    for (let hotspot = 0; hotspot < 4; hotspot += 1) {
+      const angle = time * (2.2 + hotspot * 0.18) + hotspot * Math.PI * 0.5;
+      const x = Math.cos(angle) * 22;
+      const y = Math.sin(angle) * 22;
+      context.fillStyle = hotspot % 2 ? "#d18cff" : "#fff2a8";
+      context.shadowColor = context.fillStyle;
+      context.shadowBlur = 14;
+      context.globalAlpha = 0.65 + Math.sin(time * 10 + hotspot) * 0.35;
+      context.beginPath();
+      context.arc(x, y, 2.5, 0, Math.PI * 2);
+      context.fill();
+    }
+  } else if (skinName === "organ") {
+    context.shadowColor = "#ff9aa3";
+    context.shadowBlur = 12;
+
+    context.fillStyle = "#b52f42";
+    context.beginPath();
+    context.moveTo(-12, -10);
+    context.quadraticCurveTo(-7, -27, 3, -18);
+    context.quadraticCurveTo(14, -25, 13, -8);
+    context.quadraticCurveTo(12, 7, 2, 16);
+    context.quadraticCurveTo(-9, 7, -12, -10);
+    context.closePath();
+    context.fill();
+    context.strokeStyle = "#74212d";
+    context.lineWidth = 2;
+    context.stroke();
+
+    context.fillStyle = "#f7b0b7";
+    context.beginPath();
+    context.ellipse(-12, 2, 10, 15, -0.35, 0, Math.PI * 2);
+    context.ellipse(13, 2, 10, 15, 0.35, 0, Math.PI * 2);
+    context.fill();
+    context.stroke();
+
+    context.fillStyle = "#b52f42";
+    context.beginPath();
+    context.moveTo(0, -12);
+    context.lineTo(0, 13);
+    context.strokeStyle = "#74212d";
+    context.lineWidth = 2;
+    context.stroke();
+
+    context.fillStyle = "#ffccd2";
+    context.beginPath();
+    context.arc(-4, -6, 2.5, 0, Math.PI * 2);
+    context.arc(7, -9, 2.5, 0, Math.PI * 2);
+    context.fill();
+  } else if (skinName === "laptop") {
     context.fillStyle = "#262a31";
     context.strokeStyle = "#0a0d11";
     context.lineWidth = 3;
@@ -902,6 +1151,7 @@ function frame(timestamp) {
   lastFrame = timestamp;
   update(delta);
   recordTrailPoint(timestamp);
+  updateBlackHolePair(delta);
   draw();
   requestAnimationFrame(frame);
 }
@@ -916,12 +1166,23 @@ function openShop(category = activeCategory) {
 }
 
 function setShopCategory(category) {
+  if (category !== "limiteds" && activeCategory === "limiteds") {
+    limitedUnlocked = false;
+  }
+  if (category !== "limiteds" && limitedUnlocked) {
+    limitedUnlocked = false;
+  }
+
   activeCategory = category;
   for (const tab of categoryTabs) {
     tab.setAttribute("aria-pressed", String(tab.dataset.category === category));
   }
   for (const panel of categoryPanels) {
-    panel.hidden = panel.dataset.panel !== category;
+    if (category === "limiteds") {
+      panel.hidden = panel.dataset.panel !== (limitedUnlocked ? "limiteds" : "limited-lock");
+    } else {
+      panel.hidden = panel.dataset.panel !== category;
+    }
   }
   document.querySelector("#shop-title").textContent =
     category === "skins"
@@ -939,11 +1200,36 @@ document.querySelector("#close-shop").addEventListener("click", () => {
   shopDialog.close();
 });
 shopDialog.addEventListener("close", () => {
+  limitedUnlocked = false;
+  isShopOpen = false;
+  document.querySelector("#limited-password").value = "";
+  document.querySelector("#password-error").hidden = true;
+});
+document.querySelector("#limited-password-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const input = document.querySelector("#limited-password");
+  const error = document.querySelector("#password-error");
+  if (input.value === "676767") {
+    limitedUnlocked = true;
+    error.hidden = true;
+    input.value = "";
+    setShopCategory("limiteds");
+  } else {
+    error.hidden = false;
+    input.select();
+  }
+});
+shopDialog.addEventListener("close", () => {
   isShopOpen = false;
 });
 for (const option of skinOptions) {
   option.addEventListener("click", () => {
     selectedSkin = option.dataset.skin;
+    blackHoleGrowth = 1;
+    blackHolePhase = "growing";
+    blackHolePhaseStarted = 0;
+    blackHoleGrowElapsed = 0;
+    blackHoleExplosionElapsed = 0;
     for (const skinOption of skinOptions) {
       const selected = skinOption === option;
       skinOption.setAttribute("aria-pressed", String(selected));
@@ -957,6 +1243,11 @@ for (const option of trailOptions) {
   option.addEventListener("click", () => {
     selectedTrail = option.dataset.trail;
     trailHistory = [];
+    blackHoleGrowth = 1;
+    blackHolePhase = "growing";
+    blackHolePhaseStarted = 0;
+    blackHoleGrowElapsed = 0;
+    blackHoleExplosionElapsed = 0;
     for (const trailOption of trailOptions) {
       const selected = trailOption === option;
       trailOption.setAttribute("aria-pressed", String(selected));
