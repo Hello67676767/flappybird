@@ -6,6 +6,7 @@
     <meta name="theme-color" content="#84d9e8" />
     <title>Flappy Bird</title>
     <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="scripts.js" defer></script>
   </head>
   <body>
@@ -35,6 +36,87 @@
       <span class="shop-button-icon" aria-hidden="true">✦</span>
       Skins
     </button>
+
+    <button class="settings-button" id="open-settings" type="button" aria-haspopup="dialog">
+      <span class="settings-button-icon" aria-hidden="true">⚙</span>
+      Settings
+    </button>
+
+    <button class="leaderboard-button" id="open-leaderboard" type="button" aria-haspopup="dialog">
+      Leaderboard
+    </button>
+
+    <dialog class="leaderboard-dialog" id="leaderboard" aria-labelledby="leaderboard-title">
+      <div class="leaderboard-header">
+        <div>
+          <p class="eyebrow">Fly high</p>
+          <h2 id="leaderboard-title">Leaderboard</h2>
+        </div>
+        <button class="close-leaderboard" id="close-leaderboard" type="button" aria-label="Close leaderboard">
+          &times;
+        </button>
+      </div>
+      <form class="leaderboard-name-form" id="leaderboard-name-form">
+        <label for="leaderboard-name">Your nickname</label>
+        <div class="leaderboard-name-controls">
+          <input
+            id="leaderboard-name"
+            name="nickname"
+            type="text"
+            minlength="2"
+            maxlength="20"
+            autocomplete="nickname"
+            placeholder="2–20 characters"
+            required
+          />
+          <button type="submit">Save</button>
+        </div>
+      </form>
+      <p class="leaderboard-status" id="leaderboard-status" role="status" aria-live="polite">
+        Connecting to the leaderboard…
+      </p>
+      <ol class="leaderboard-list" id="leaderboard-list" aria-label="Top scores"></ol>
+    </dialog>
+
+    <dialog class="settings-dialog" id="game-settings" aria-labelledby="settings-title">
+      <div class="settings-header">
+        <div>
+          <p class="eyebrow">Game options</p>
+          <h2 id="settings-title">Settings</h2>
+        </div>
+        <button class="close-settings" id="close-settings" type="button" aria-label="Close settings">
+          &times;
+        </button>
+      </div>
+      <div class="settings-options">
+        <label class="setting-option" for="reduce-effects">
+          <span>
+            <strong>Reduce effects</strong>
+            <small>Reduce visual animations</small>
+          </span>
+          <input id="reduce-effects" type="checkbox" />
+        </label>
+        <label class="setting-option" for="show-controls">
+          <span>
+            <strong>Show controls</strong>
+            <small>Display keyboard hints below the game</small>
+          </span>
+          <input id="show-controls" type="checkbox" checked />
+        </label>
+        <label class="setting-option" for="game-sound">
+          <span>
+            <strong>Sound</strong>
+            <small>Enable game audio</small>
+          </span>
+          <input id="game-sound" type="checkbox" checked />
+        </label>
+        <div class="volume-control" id="volume-control" hidden>
+          <label for="game-volume">Volume</label>
+          <input id="game-volume" type="range" min="0" max="100" value="70" aria-label="Game volume" />
+          <output id="volume-output" for="game-volume">70%</output>
+        </div>
+      </div>
+    </dialog>
 
     <dialog class="shop-dialog" id="skin-shop" aria-labelledby="shop-title">
       <div class="shop-header">

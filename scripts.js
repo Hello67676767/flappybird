@@ -1,5 +1,16 @@
 const canvas = document.querySelector("#game");
 const context = canvas.getContext("2d");
+const SUPABASE_URL = "https://ufupsubbvnjiqkxnbrkr.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_j9TJXuw3vn4VupzgIUGy6w_wdvoskhA";
+const supabaseClient =
+  window.supabase && typeof window.supabase.createClient === "function"
+    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)
+    : null;
+const leaderboardDialog = document.querySelector("#leaderboard");
+const leaderboardNameForm = document.querySelector("#leaderboard-name-form");
+const leaderboardNameInput = document.querySelector("#leaderboard-name");
+const leaderboardStatus = document.querySelector("#leaderboard-status");
+const leaderboardList = document.querySelector("#leaderboard-list");
 
 const WIDTH = 480;
 const HEIGHT = 640;
@@ -44,12 +55,15 @@ let isShopOpen = false;
 let limitedUnlocked = false;
 let trailHistory = [];
 let lastTrailSample = 0;
+let audioContext = null;
 let cameraFlashUntil = 0;
 let blackHoleGrowth = 1;
 let blackHolePhase = "growing";
 let blackHolePhaseStarted = 0;
 let blackHoleGrowElapsed = 0;
 let blackHoleExplosionElapsed = 0;
+let currentUser = null;
+let authReady = null;
 const BLACK_HOLE_MAX_GROWTH = 5.8;
 const BLACK_HOLE_GROW_TIME = 12;
 const BLACK_HOLE_EXPLOSION_TIME = 2.2;
@@ -75,6 +89,62 @@ function addPipe(x = WIDTH + 24) {
     gapTop: gapCenter - PIPE_GAP / 2,
     scored: false,
   });
+}
+
+function getAudioContext() {
+  if (localStorage.getItem("game-sound") === "false") return null;
+  if (!audioContext) {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return null;
+    audioContext = new AudioContextClass();
+  }
+  if (audioContext.state === "suspended") audioContext.resume();
+  return audioContext;
+}
+
+function getGameVolume() {
+  return Math.max(0, Math.min(100, Number(localStorage.getItem("game-volume") || "70"))) / 100;
+}
+
+function playBlip() {
+  const context = getAudioContext();
+  if (!context) return;
+
+  const now = context.currentTime;
+  const oscillator = context.createOscillator();
+  const gain = context.createGain();
+  oscillator.type = "sine";
+  oscillator.frequency.setValueAtTime(620, now);
+  oscillator.frequency.exponentialRampToValueAtTime(420, now + 0.055);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, getGameVolume() * 0.12), now + 0.008);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.07);
+  oscillator.connect(gain);
+  gain.connect(context.destination);
+  oscillator.start(now);
+  oscillator.stop(now + 0.075);
+}
+
+function playDing() {
+  const context = getAudioContext();
+  if (!context) return;
+
+  const now = context.currentTime;
+  const volume = getGameVolume();
+  for (const [frequency, delay] of [[880, 0], [1320, 0.055]]) {
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    const start = now + delay;
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(frequency, start);
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, volume * 0.14), start + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.16);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start(start);
+    oscillator.stop(start + 0.17);
+  }
 }
 
 function startGame() {
@@ -137,16 +207,18 @@ function updateBlackHolePair(deltaSeconds) {
 function flap() {
   if (state === "ready" || state === "over") {
     startGame();
+    playBlip();
     if (selectedSkin === "camera") cameraFlashUntil = performance.now() + 190;
     return;
   }
 
   birdVelocity = FLAP_STRENGTH;
+  playBlip();
   if (selectedSkin === "camera") cameraFlashUntil = performance.now() + 190;
 }
 
 function handleKeyDown(event) {
-  if (shopDialog.open) return;
+  if (shopDialog.open || settingsDialog.open || leaderboardDialog.open) return;
 
   if (event.code === "Space" || event.code === "ArrowUp") {
     event.preventDefault();
@@ -157,6 +229,7 @@ function handleKeyDown(event) {
 function update(delta) {
   if (state !== "playing" || isShopOpen) return;
 
+  let gameOver = false;
   birdVelocity += GRAVITY * delta;
   birdY += birdVelocity * delta;
   groundOffset = (groundOffset + PIPE_SPEED * delta) % 48;
@@ -167,6 +240,7 @@ function update(delta) {
     if (!pipe.scored && pipe.x + PIPE_WIDTH < BIRD_X) {
       pipe.scored = true;
       score += 1;
+      playDing();
     }
 
     const overlapsBird =
@@ -176,7 +250,7 @@ function update(delta) {
       birdY - BIRD_RADIUS < pipe.gapTop ||
       birdY + BIRD_RADIUS > pipe.gapTop + PIPE_GAP;
 
-    if (overlapsBird && missesGap) state = "over";
+    if (overlapsBird && missesGap) gameOver = true;
   }
 
   pipes = pipes.filter((pipe) => pipe.x + PIPE_WIDTH > -8);
@@ -185,8 +259,15 @@ function update(delta) {
   }
 
   if (birdY - BIRD_RADIUS < 0 || birdY + BIRD_RADIUS > GROUND_TOP) {
-    state = "over";
+    gameOver = true;
   }
+  if (gameOver) finishGame();
+}
+
+function finishGame() {
+  if (state === "over") return;
+  state = "over";
+  void submitCurrentScore(score);
 }
 
 function drawBackground() {
@@ -1192,7 +1273,182 @@ function setShopCategory(category) {
         : "Limited items";
 }
 
+function setLeaderboardStatus(message) {
+  leaderboardStatus.textContent = message;
+}
+
+async function initializeLeaderboardAuth() {
+  if (!supabaseClient) {
+    setLeaderboardStatus("Could not load Supabase. Check your internet connection and reload.");
+    return false;
+  }
+
+  try {
+    const { data, error } = await supabaseClient.auth.getSession();
+    if (error) throw error;
+
+    let session = data.session;
+    if (!session) {
+      const { data: signInData, error: signInError } = await supabaseClient.auth.signInAnonymously();
+      if (signInError) throw signInError;
+      session = signInData.session;
+    }
+
+    if (!session) throw new Error("Supabase did not create an anonymous session.");
+    currentUser = session.user;
+    leaderboardNameInput.value =
+      (currentUser.user_metadata && currentUser.user_metadata.display_name) || "";
+    setLeaderboardStatus(
+      leaderboardNameInput.value
+        ? "Your nickname is ready. Scores are saved when a run ends."
+        : "Choose a nickname to save your scores."
+    );
+    return true;
+  } catch (error) {
+    setLeaderboardStatus(`Could not connect to Supabase: ${error.message}`);
+    return false;
+  }
+}
+
+async function loadLeaderboard() {
+  leaderboardList.replaceChildren();
+  if (!authReady || !(await authReady)) return;
+
+  setLeaderboardStatus("Loading scores...");
+  try {
+    const { data, error } = await supabaseClient
+      .from("leaderboard_scores")
+      .select("user_id, display_name, best_score")
+      .order("best_score", { ascending: false })
+      .order("user_id", { ascending: true })
+      .limit(10);
+    if (error) throw error;
+
+    if (data.length === 0) {
+      setLeaderboardStatus("No scores yet. Be the first to fly!");
+      return;
+    }
+
+    for (const entry of data) {
+      const row = document.createElement("li");
+      const player = document.createElement("span");
+      const playerScore = document.createElement("span");
+      player.className = "leaderboard-player";
+      player.textContent = entry.display_name;
+      playerScore.className = "leaderboard-score";
+      playerScore.textContent = String(entry.best_score);
+      row.append(player, playerScore);
+      leaderboardList.append(row);
+    }
+    setLeaderboardStatus("Top 10 scores");
+  } catch (error) {
+    setLeaderboardStatus(`Could not load scores: ${error.message}`);
+  }
+}
+
+async function submitCurrentScore(runScore) {
+  if (runScore < 1 || !authReady || !(await authReady)) return false;
+
+  const displayName =
+    currentUser && currentUser.user_metadata && currentUser.user_metadata.display_name;
+  if (!displayName) {
+    setLeaderboardStatus("Choose a nickname in the leaderboard to save your score.");
+    return false;
+  }
+
+  try {
+    const { error } = await supabaseClient.rpc("submit_leaderboard_score", {
+      p_score: runScore,
+      p_display_name: displayName,
+    });
+    if (error) throw error;
+    if (leaderboardDialog.open) await loadLeaderboard();
+    setLeaderboardStatus(`Score ${runScore} saved for ${displayName}.`);
+    return true;
+  } catch (error) {
+    setLeaderboardStatus(`Could not save your score: ${error.message}`);
+    return false;
+  }
+}
+
+async function saveLeaderboardNickname(event) {
+  event.preventDefault();
+  const displayName = leaderboardNameInput.value.trim();
+  const nicknameLength = Array.from(displayName).length;
+  if (nicknameLength < 2 || nicknameLength > 20) {
+    setLeaderboardStatus("Your nickname must be 2–20 characters long.");
+    return;
+  }
+  if (!authReady || !(await authReady)) return;
+
+  const saveButton = leaderboardNameForm.querySelector('button[type="submit"]');
+  saveButton.disabled = true;
+  try {
+    const { data, error } = await supabaseClient.auth.updateUser({
+      data: { display_name: displayName },
+    });
+    if (error) throw error;
+    if (!data.user) throw new Error("Supabase did not return your updated user.");
+    currentUser = data.user;
+
+    if (state === "over" && score > 0) {
+      await submitCurrentScore(score);
+    } else {
+      setLeaderboardStatus("Nickname saved. Your next score will be submitted automatically.");
+      await loadLeaderboard();
+    }
+  } catch (error) {
+    setLeaderboardStatus(`Could not save your nickname: ${error.message}`);
+  } finally {
+    saveButton.disabled = false;
+  }
+}
+
 document.querySelector("#open-shop").addEventListener("click", () => openShop("skins"));
+document.querySelector("#open-leaderboard").addEventListener("click", () => {
+  leaderboardDialog.showModal();
+  void loadLeaderboard();
+});
+document.querySelector("#close-leaderboard").addEventListener("click", () => {
+  leaderboardDialog.close();
+});
+leaderboardNameForm.addEventListener("submit", saveLeaderboardNickname);
+const settingsDialog = document.querySelector("#game-settings");
+const reduceEffectsInput = document.querySelector("#reduce-effects");
+const showControlsInput = document.querySelector("#show-controls");
+const gameSoundInput = document.querySelector("#game-sound");
+const volumeControl = document.querySelector("#volume-control");
+const gameVolumeInput = document.querySelector("#game-volume");
+const volumeOutput = document.querySelector("#volume-output");
+
+function applySettings() {
+  document.body.classList.toggle("reduce-effects", reduceEffectsInput.checked);
+  document.querySelector(".controls").classList.toggle("hidden", !showControlsInput.checked);
+  volumeControl.hidden = !gameSoundInput.checked;
+  localStorage.setItem("reduce-effects", String(reduceEffectsInput.checked));
+  localStorage.setItem("show-controls", String(showControlsInput.checked));
+  localStorage.setItem("game-sound", String(gameSoundInput.checked));
+  localStorage.setItem("game-volume", gameVolumeInput.value);
+}
+
+reduceEffectsInput.checked = localStorage.getItem("reduce-effects") === "true";
+showControlsInput.checked = localStorage.getItem("show-controls") !== "false";
+gameSoundInput.checked = localStorage.getItem("game-sound") !== "false";
+gameVolumeInput.value = localStorage.getItem("game-volume") || "70";
+volumeOutput.value = `${gameVolumeInput.value}%`;
+volumeOutput.textContent = `${gameVolumeInput.value}%`;
+applySettings();
+
+document.querySelector("#open-settings").addEventListener("click", () => settingsDialog.showModal());
+document.querySelector("#close-settings").addEventListener("click", () => settingsDialog.close());
+reduceEffectsInput.addEventListener("change", applySettings);
+showControlsInput.addEventListener("change", applySettings);
+gameSoundInput.addEventListener("change", applySettings);
+gameVolumeInput.addEventListener("input", () => {
+  volumeOutput.value = `${gameVolumeInput.value}%`;
+  volumeOutput.textContent = `${gameVolumeInput.value}%`;
+  localStorage.setItem("game-volume", gameVolumeInput.value);
+});
 for (const tab of categoryTabs) {
   tab.addEventListener("click", () => setShopCategory(tab.dataset.category));
 }
@@ -1260,5 +1516,6 @@ for (const option of trailOptions) {
 window.addEventListener("keydown", handleKeyDown);
 window.addEventListener("resize", resizeCanvas);
 
+authReady = initializeLeaderboardAuth();
 resizeCanvas();
 requestAnimationFrame(frame);
